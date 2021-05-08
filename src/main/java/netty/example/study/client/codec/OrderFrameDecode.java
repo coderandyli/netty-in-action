@@ -1,4 +1,4 @@
-package netty.example.study.server.codec;
+package netty.example.study.client.codec;
 
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 
