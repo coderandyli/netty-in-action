@@ -15,6 +15,7 @@ import netty.example.study.server.codec.OrderFrameDecode;
 import netty.example.study.server.codec.OrderFrameEncode;
 import netty.example.study.server.codec.OrderProtocolDecode;
 import netty.example.study.server.codec.OrderProtocolEncode;
+import netty.example.study.server.handler.MetricsHandler;
 import netty.example.study.server.handler.OrderServerProcessHandler;
 
 import java.util.concurrent.ExecutionException;
@@ -39,12 +40,16 @@ public class Server {
 
         b.group(bossGroup, workGroup);
 
+        //metrics
+        MetricsHandler metricsHandler = new MetricsHandler();
 
         // channel顺序，入站：自上而下；出站：自下而上，对于服务端而言，先执行入站操作，而对于客户端而言，先执行出站操作。
         b.childHandler(new ChannelInitializer<NioSocketChannel>() {
             @Override
             protected void initChannel(NioSocketChannel ch) throws Exception {
                 ChannelPipeline pipeline = ch.pipeline();
+
+                pipeline.addLast("metricHandler", metricsHandler); // 可共享的
 
                 pipeline.addLast("frameDecoder", new OrderFrameDecode()); // 入站
                 pipeline.addLast("frameEncode", new OrderFrameEncode()); // 出站
