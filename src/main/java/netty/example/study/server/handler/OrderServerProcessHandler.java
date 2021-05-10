@@ -25,6 +25,9 @@ public class OrderServerProcessHandler extends SimpleChannelInboundHandler<Reque
         responseMessage.setMessageBody(operationResult);
 
         if (ctx.channel().isActive() && ctx.channel().isWritable()){
+            // 【不能使用】ctx.write()方法仅仅是将信息加到队列里面，并没有把信息真正的发送出去
+            // 【不能使用】ctx.channel().writeAndFlush() // 该方法会在整个pipeline都走一遍
+            // 寻找下一个合适的channelHandler
             ctx.writeAndFlush(responseMessage);
         }else {
             log.error("not writable now, message dropped");

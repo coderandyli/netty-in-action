@@ -33,6 +33,7 @@ public class Server {
                 .handler(new LoggingHandler(LogLevel.INFO)) // 为NioServerSocketChannel添加 ChannelHandler
                 .group(new NioEventLoopGroup());
 
+        // channel顺序，入站：自上而下；出站：自下而上，对于服务端而言，先执行入站操作，而对于客户端而言，先执行出站操作。
         b.childHandler(new ChannelInitializer<NioSocketChannel>() {
             @Override
             protected void initChannel(NioSocketChannel ch) throws Exception {

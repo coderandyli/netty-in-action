@@ -15,6 +15,7 @@ import java.util.List;
 public class OrderProtocolEncode extends MessageToMessageEncoder<ResponseMessage> {
     @Override
     protected void encode(ChannelHandlerContext ctx, ResponseMessage responseMessage, List<Object> out) throws Exception {
+        // 创建bytebuf，不能使用ByteBufAllocator.DEFAULT.buffer(), 因为堆外内存与堆内切换是就不会生效
         ByteBuf buffer = ctx.alloc().buffer();
 
         responseMessage.encode(buffer);

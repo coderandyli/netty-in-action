@@ -11,7 +11,6 @@ import io.netty.handler.logging.LoggingHandler;
 import lombok.extern.slf4j.Slf4j;
 import netty.example.study.client.codec.*;
 import netty.example.study.common.order.OrderOperation;
-import netty.example.study.server.handler.OrderServerProcessHandler;
 
 import java.util.concurrent.ExecutionException;
 
@@ -32,16 +31,15 @@ public class ClientV1 {
             @Override
             protected void initChannel(NioSocketChannel ch) throws Exception {
                 ChannelPipeline pipeline = ch.pipeline();
+                //编解码
                 pipeline.addLast(new OrderFrameDecode()); // 入站
                 pipeline.addLast(new OrderFrameEncode()); // 出站
                 pipeline.addLast(new OrderProtocolEncode()); // 出站
                 pipeline.addLast(new OrderProtocolDecode()); // 入站
 
-                pipeline.addLast(new LoggingHandler(LogLevel.INFO));
-
-                pipeline.addLast(new OperationToRequestMessageEncoder());
-
-                pipeline.addLast(new OrderServerProcessHandler()); // 入站
+                // 请求参数转换
+                pipeline.addLast(new OperationToRequestMessageEncoder()); // 出站
+                pipeline.addLast(new LoggingHandler(LogLevel.INFO)); // 日志
             }
         });
 
