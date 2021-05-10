@@ -50,8 +50,11 @@ public class Client {
 
         // 发送一个请求
         RequestMessage requestMessage = new RequestMessage(IdUtil.nextId(), new OrderOperation(1001, "tudou"));
-        f.channel().writeAndFlush(requestMessage);
 
+        // 发送一万次，内存泄露检测.
+        for (int i = 0; i < 100000; i++) {
+            f.channel().writeAndFlush(requestMessage);
+        }
         f.channel().closeFuture().sync().get();
     }
 }

@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>
  * {@link ChannelDuplexHandler} 即支持输入、又支持输出
  **/
-@ChannelHandler.Sharable
+@ChannelHandler.Sharable // 可共享的
 public class MetricsHandler extends ChannelDuplexHandler {
     /**
      * 连接数
