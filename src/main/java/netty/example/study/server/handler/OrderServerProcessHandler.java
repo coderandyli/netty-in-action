@@ -1,6 +1,5 @@
 package netty.example.study.server.handler;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +18,7 @@ public class OrderServerProcessHandler extends SimpleChannelInboundHandler<Reque
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, RequestMessage requestMessage) throws Exception {
         // 【内存泄露检测】创建一个buffer, 不释放
-        ByteBuf buffer = ctx.alloc().buffer();
+        // ByteBuf buffer = ctx.alloc().buffer();
 
         Operation operation = requestMessage.getMessageBody();
         OperationResult operationResult = operation.execute();

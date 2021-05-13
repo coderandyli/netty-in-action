@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * @description: 客户端入口 - response响应分发
  *  - 接收返回值（非阻塞的方式）
+ *  - 新增{@link ResponseDispatcherHandler}
  * @author: lizhenzhen
  * @date: 2021-05-08 15:59
  **/
