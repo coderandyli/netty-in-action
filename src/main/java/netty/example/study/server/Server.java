@@ -10,6 +10,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.concurrent.DefaultThreadFactory;
+import io.netty.util.concurrent.UnorderedThreadPoolEventExecutor;
 import lombok.extern.slf4j.Slf4j;
 import netty.example.study.server.codec.OrderFrameDecode;
 import netty.example.study.server.codec.OrderFrameEncode;
@@ -37,6 +38,8 @@ public class Server {
         // 线程
         NioEventLoopGroup bossGroup = new NioEventLoopGroup(0, new DefaultThreadFactory("boss"));
         NioEventLoopGroup workGroup = new NioEventLoopGroup(0, new DefaultThreadFactory("worker"));
+        UnorderedThreadPoolEventExecutor businessGroup = new UnorderedThreadPoolEventExecutor(10, new DefaultThreadFactory("business")); // 业务处理线程池
+        // NioEventLoopGroup businessGroup = new NioEventLoopGroup(0, new DefaultThreadFactory("business")); // 不建议使用的NioEventLoopGroup做业务线程池，因为默认情况下handler始终会在池中的某一个线程中执行(handle绑定group(线程池)中唯一的executor)
 
         b.group(bossGroup, workGroup);
 
@@ -58,7 +61,7 @@ public class Server {
 
                 pipeline.addLast("loggingHandler", new LoggingHandler(LogLevel.INFO));
 
-                pipeline.addLast("orderServerProcessHandler", new OrderServerProcessHandler()); // 入站
+                pipeline.addLast(businessGroup, new OrderServerProcessHandler()); // 入站
             }
         });
 
