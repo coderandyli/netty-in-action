@@ -7,6 +7,7 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.flush.FlushConsolidationHandler;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.concurrent.DefaultThreadFactory;
@@ -60,6 +61,8 @@ public class Server {
                 pipeline.addLast("protocolDecode", new OrderProtocolDecode()); // 入站
 
                 pipeline.addLast("loggingHandler", new LoggingHandler(LogLevel.INFO));
+
+                pipeline.addLast("flushEnhance", new FlushConsolidationHandler(10, true));// flush增强，增加了吞吐量，但有一定延迟
 
                 pipeline.addLast(businessGroup, new OrderServerProcessHandler()); // 入站
             }

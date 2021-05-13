@@ -31,6 +31,16 @@ public class OrderServerProcessHandler extends SimpleChannelInboundHandler<Reque
             // 【不能使用】ctx.write()方法仅仅是将信息加到队列里面，并没有把信息真正的发送出去
             // 【不能使用】ctx.channel().writeAndFlush() // 该方法会在整个pipeline都走一遍
             // 寻找下一个合适的channelHandler
+
+            /**
+             * 【延迟与吞吐量的抉择】ctx.writeAndFlush 属于"加急式"的(类似与快递一样，进了仓库立刻发送) 每次写数据之后都会flush，吞吐量不是很高。
+             *  因此可以考虑牺牲一些延迟，增大吞吐量
+             *
+             * 方案一：可以参考官方示例：【echo】，channelRead方法中wirte，channelReadComplete方法中flush，
+             * 但是这种方案不适合在异步业务线程中，因为channelRead 中的业务处理结果的 write 很可能发生在 channelReadComplete 之后
+             *
+             * 方案二：使用FlushConsolidationHandler
+             */
             ctx.writeAndFlush(responseMessage);
         }else {
             log.error("not writable now, message dropped");
