@@ -10,6 +10,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.flush.FlushConsolidationHandler;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.traffic.GlobalTrafficShapingHandler;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.UnorderedThreadPoolEventExecutor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,22 +48,30 @@ public class Server {
         //metrics
         MetricsHandler metricsHandler = new MetricsHandler();
 
+        // 流量整形 （读写流控分别为100M）
+        GlobalTrafficShapingHandler globalTrafficShapingHandler = new GlobalTrafficShapingHandler(new NioEventLoopGroup(), 100 * 1024 * 1024, 100 * 1024 * 1024);
+
         // channel顺序，入站：自上而下；出站：自下而上，对于服务端而言，先执行入站操作，而对于客户端而言，先执行出站操作。
         b.childHandler(new ChannelInitializer<NioSocketChannel>() {
             @Override
             protected void initChannel(NioSocketChannel ch) throws Exception {
                 ChannelPipeline pipeline = ch.pipeline();
 
+                pipeline.addLast("loggingHandler", new LoggingHandler(LogLevel.DEBUG));
+
                 pipeline.addLast("metricHandler", metricsHandler); // 可共享的
+
+                pipeline.addLast("TSHandler", globalTrafficShapingHandler); // 流量整形
 
                 pipeline.addLast("frameDecoder", new OrderFrameDecode()); // 入站
                 pipeline.addLast("frameEncode", new OrderFrameEncode()); // 出站
                 pipeline.addLast("protocolEncode", new OrderProtocolEncode()); // 出站
                 pipeline.addLast("protocolDecode", new OrderProtocolDecode()); // 入站
 
-                pipeline.addLast("loggingHandler", new LoggingHandler(LogLevel.INFO));
 
-                pipeline.addLast("flushEnhance", new FlushConsolidationHandler(10, true));// flush增强，增加了吞吐量，但有一定延迟
+
+                // flush增强，增加了吞吐量，但有一定延迟
+                pipeline.addLast("flushEnhance", new FlushConsolidationHandler(10, true)); // 5次之后，才进行flush，打开异步增强
 
                 pipeline.addLast(businessGroup, new OrderServerProcessHandler()); // 入站
             }

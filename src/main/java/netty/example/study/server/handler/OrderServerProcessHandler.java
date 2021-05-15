@@ -28,6 +28,13 @@ public class OrderServerProcessHandler extends SimpleChannelInboundHandler<Reque
         responseMessage.setMessageBody(operationResult);
 
         if (ctx.channel().isActive() && ctx.channel().isWritable()){
+
+            /**
+             * write 与 flush方法
+             *
+             *
+             */
+
             // 【不能使用】ctx.write()方法仅仅是将信息加到队列里面，并没有把信息真正的发送出去
             // 【不能使用】ctx.channel().writeAndFlush() // 该方法会在整个pipeline都走一遍
             // 寻找下一个合适的channelHandler
@@ -39,7 +46,7 @@ public class OrderServerProcessHandler extends SimpleChannelInboundHandler<Reque
              * 方案一：可以参考官方示例：【echo】，channelRead方法中wirte，channelReadComplete方法中flush，
              * 但是这种方案不适合在异步业务线程中，因为channelRead 中的业务处理结果的 write 很可能发生在 channelReadComplete 之后
              *
-             * 方案二：使用FlushConsolidationHandler
+             * 方案二：使用 FlushConsolidationHandler
              */
             ctx.writeAndFlush(responseMessage);
         }else {
