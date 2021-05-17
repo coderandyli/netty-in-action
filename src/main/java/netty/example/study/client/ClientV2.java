@@ -68,6 +68,7 @@ public class ClientV2 {
         // 发送一个请求
         f.channel().writeAndFlush(requestMessage);
 
+
         // 获取响应(response)结果
         OperationResult operationResult = operationResultFuture.get();
         System.out.println("response = " + operationResult);
