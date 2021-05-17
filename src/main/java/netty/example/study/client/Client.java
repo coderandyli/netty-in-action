@@ -8,6 +8,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
 import lombok.extern.slf4j.Slf4j;
 import netty.example.study.client.codec.OrderFrameDecode;
 import netty.example.study.client.codec.OrderFrameEncode;
@@ -20,6 +22,7 @@ import netty.example.study.common.auth.AuthOperation;
 import netty.example.study.common.order.OrderOperation;
 import netty.example.study.util.IdUtil;
 
+import javax.net.ssl.SSLException;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -29,13 +32,18 @@ import java.util.concurrent.ExecutionException;
  **/
 @Slf4j
 public class Client {
-    public static void main(String[] args) throws InterruptedException, ExecutionException {
+    public static void main(String[] args) throws InterruptedException, ExecutionException, SSLException {
         Bootstrap b = new Bootstrap();
         b.channel(NioSocketChannel.class)
                 .group(new NioEventLoopGroup());
 
         KeepaliveHandler keepaliveHandler = new KeepaliveHandler();
         LoggingHandler loggingHandler = new LoggingHandler(LogLevel.INFO);
+
+        // ssl
+        SslContextBuilder sslContextBuilder = SslContextBuilder.forClient();
+
+        SslContext sslContext = sslContextBuilder.build();
 
         // 客户端，先执行出站（倒序）
         b.handler(new ChannelInitializer<NioSocketChannel>() {
@@ -44,6 +52,8 @@ public class Client {
                 ChannelPipeline pipeline = ch.pipeline();
 
                 pipeline.addLast(new ClientIdleCheckHandler()); // idle check
+
+                pipeline.addLast(sslContext.newHandler(ch.alloc()));
 
                 pipeline.addLast(new OrderFrameDecode()); // 入站
                 pipeline.addLast(new OrderFrameEncode()); // 出站
@@ -62,7 +72,7 @@ public class Client {
         // 【自定义授权】
         String userName = "admin"; // 可以授权成功
         String userName1 = "admin1"; // 不会授权成功
-        AuthOperation authOperation = new AuthOperation(userName1, "password");
+        AuthOperation authOperation = new AuthOperation(userName, "password");
         f.channel().writeAndFlush(new RequestMessage(IdUtil.nextId(), authOperation));
 
         // 发送一个请求

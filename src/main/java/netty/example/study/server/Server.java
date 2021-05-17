@@ -13,6 +13,9 @@ import io.netty.handler.ipfilter.IpSubnetFilterRule;
 import io.netty.handler.ipfilter.RuleBasedIpFilter;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.util.SelfSignedCertificate;
 import io.netty.handler.traffic.GlobalTrafficShapingHandler;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.UnorderedThreadPoolEventExecutor;
@@ -26,6 +29,8 @@ import netty.example.study.server.handler.MetricsHandler;
 import netty.example.study.server.handler.OrderServerProcessHandler;
 import netty.example.study.server.handler.ServerIdleCheckHandler;
 
+import javax.net.ssl.SSLException;
+import java.security.cert.CertificateException;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -35,7 +40,7 @@ import java.util.concurrent.ExecutionException;
  **/
 @Slf4j
 public class Server {
-    public static void main(String[] args) throws InterruptedException, ExecutionException {
+    public static void main(String[] args) throws InterruptedException, ExecutionException, CertificateException, SSLException {
         ServerBootstrap b = new ServerBootstrap();
         b.channel(NioServerSocketChannel.class)
 //                .option(NioChannelOption.SO_BACKLOG, 1024) // 最大连接等待数量
@@ -64,6 +69,11 @@ public class Server {
         //auth
         AuthHandler authHandler = new AuthHandler();
 
+        // ssl
+        SelfSignedCertificate selfSignedCertificate = new SelfSignedCertificate(); // ssl自签证书
+        log.info("certificate position: {}", selfSignedCertificate.certificate().toString()); // 生成后进行导入，详见/resources/ssl.txt
+        SslContext sslContext = SslContextBuilder.forServer(selfSignedCertificate.certificate(), selfSignedCertificate.privateKey()).build();
+
         // channel顺序，入站：自上而下；出站：自下而上，对于服务端而言，先执行入站操作，而对于客户端而言，先执行出站操作。
         b.childHandler(new ChannelInitializer<NioSocketChannel>() {
             @Override
@@ -79,6 +89,8 @@ public class Server {
                 pipeline.addLast("metricHandler", metricsHandler); // 可共享的
 
                 pipeline.addLast("idleHandler", new ServerIdleCheckHandler()); // 空闲检测
+
+                pipeline.addLast("ssl", sslContext.newHandler(ch.alloc()));
 
                 pipeline.addLast("frameDecoder", new OrderFrameDecode()); // 入站
                 pipeline.addLast("frameEncode", new OrderFrameEncode()); // 出站

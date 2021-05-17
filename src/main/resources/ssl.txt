@@ -1,0 +1,16 @@
+安装证书:
+
+sudo keytool -import -alias netty -keystore  "/Library/Java/JavaVirtualMachines/jdk1.8.0_211.jdk/Contents/Home/jre/lib/security/cacerts"  -file "/var/folders/lq/lb9nytrd0ts9b6rbr00yprkw0000gn/T/keyutil_example.com_382635382957652813.crt" -storepass changeit
+
+删除证书:
+
+sudo keytool -delete -alias netty -keystore "/Library/Java/JavaVirtualMachines/jdk1.8.0_211.jdk/Contents/Home/jre/lib/security/cacerts" -storepass changeit
+
+说明：
+1. "/var/folders/lq/lb9nytrd0ts9b6rbr00yprkw0000gn/T/keyutil_example.com_382635382957652813.crt" 需要替换，是自签证书位置，Server启动会打印出来。
+2. "/Library/Java/JavaVirtualMachines/jdk1.8.0_211.jdk/Contents/Home/jre/lib/security/cacerts"  需要替换，是jdk的目录，注意是项目运行的jdk目录，可能有的人装了多个jdk，所以注意下不要装错了。
+3. -storepass changeit 这个是默认密码，就叫changeit，如果没有改过，那不动就行。
+4. 证书导入过，需要删掉的话，可以执行删除证书命令就行了。
+
+debug ssl:
+-Djavax.net.debug=ssl
