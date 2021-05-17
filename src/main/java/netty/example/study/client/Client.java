@@ -88,5 +88,6 @@ public class Client {
         }
 
         f.channel().closeFuture().sync().get();
+
     }
 }
