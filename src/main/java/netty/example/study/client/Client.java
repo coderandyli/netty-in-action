@@ -13,6 +13,8 @@ import netty.example.study.client.codec.OrderFrameDecode;
 import netty.example.study.client.codec.OrderFrameEncode;
 import netty.example.study.client.codec.OrderProtocolDecode;
 import netty.example.study.client.codec.OrderProtocolEncode;
+import netty.example.study.client.handler.ClientIdleCheckHandler;
+import netty.example.study.client.handler.KeepaliveHandler;
 import netty.example.study.common.RequestMessage;
 import netty.example.study.common.order.OrderOperation;
 import netty.example.study.util.IdUtil;
@@ -31,17 +33,24 @@ public class Client {
         b.channel(NioSocketChannel.class)
                 .group(new NioEventLoopGroup());
 
+        KeepaliveHandler keepaliveHandler = new KeepaliveHandler();
+
         // 客户端，先执行出站（倒序）
         b.handler(new ChannelInitializer<NioSocketChannel>() {
             @Override
             protected void initChannel(NioSocketChannel ch) throws Exception {
                 ChannelPipeline pipeline = ch.pipeline();
+
+                pipeline.addLast(new ClientIdleCheckHandler()); // idle check
+
                 pipeline.addLast(new OrderFrameDecode()); // 入站
                 pipeline.addLast(new OrderFrameEncode()); // 出站
                 pipeline.addLast(new OrderProtocolEncode()); // 出站
                 pipeline.addLast(new OrderProtocolDecode()); // 入站
 
                 pipeline.addLast(new LoggingHandler(LogLevel.INFO));
+
+                pipeline.addLast(keepaliveHandler); // keepalive handler
             }
         });
 

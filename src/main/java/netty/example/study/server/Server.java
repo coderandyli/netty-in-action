@@ -20,6 +20,7 @@ import netty.example.study.server.codec.OrderProtocolDecode;
 import netty.example.study.server.codec.OrderProtocolEncode;
 import netty.example.study.server.handler.MetricsHandler;
 import netty.example.study.server.handler.OrderServerProcessHandler;
+import netty.example.study.server.handler.ServerIdleCheckHandler;
 
 import java.util.concurrent.ExecutionException;
 
@@ -61,14 +62,14 @@ public class Server {
 
                 pipeline.addLast("metricHandler", metricsHandler); // 可共享的
 
-                pipeline.addLast("TSHandler", globalTrafficShapingHandler); // 流量整形
+                pipeline.addLast("idleHandler", new ServerIdleCheckHandler()); // 空闲检测
+
+                pipeline.addLast("tsHandler", globalTrafficShapingHandler); // 流量整形
 
                 pipeline.addLast("frameDecoder", new OrderFrameDecode()); // 入站
                 pipeline.addLast("frameEncode", new OrderFrameEncode()); // 出站
                 pipeline.addLast("protocolEncode", new OrderProtocolEncode()); // 出站
                 pipeline.addLast("protocolDecode", new OrderProtocolDecode()); // 入站
-
-
 
                 // flush增强，增加了吞吐量，但有一定延迟
                 pipeline.addLast("flushEnhance", new FlushConsolidationHandler(10, true)); // 5次之后，才进行flush，打开异步增强
