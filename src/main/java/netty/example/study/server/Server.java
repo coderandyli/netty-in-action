@@ -8,6 +8,9 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.flush.FlushConsolidationHandler;
+import io.netty.handler.ipfilter.IpFilterRuleType;
+import io.netty.handler.ipfilter.IpSubnetFilterRule;
+import io.netty.handler.ipfilter.RuleBasedIpFilter;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.traffic.GlobalTrafficShapingHandler;
@@ -18,6 +21,7 @@ import netty.example.study.server.codec.OrderFrameDecode;
 import netty.example.study.server.codec.OrderFrameEncode;
 import netty.example.study.server.codec.OrderProtocolDecode;
 import netty.example.study.server.codec.OrderProtocolEncode;
+import netty.example.study.server.handler.AuthHandler;
 import netty.example.study.server.handler.MetricsHandler;
 import netty.example.study.server.handler.OrderServerProcessHandler;
 import netty.example.study.server.handler.ServerIdleCheckHandler;
@@ -49,8 +53,16 @@ public class Server {
         //metrics
         MetricsHandler metricsHandler = new MetricsHandler();
 
-        // 流量整形 （读写流控分别为100M）
+        // trafficShaping 流量整形 （读写流控分别为100M）
         GlobalTrafficShapingHandler globalTrafficShapingHandler = new GlobalTrafficShapingHandler(new NioEventLoopGroup(), 100 * 1024 * 1024, 100 * 1024 * 1024);
+
+        //ipfilter
+//        IpSubnetFilterRule ipSubnetFilterRule = new IpSubnetFilterRule("127.0.0.1", 8, IpFilterRuleType.REJECT);
+        IpSubnetFilterRule ipSubnetFilterRule = new IpSubnetFilterRule("127.1.1.1", 16, IpFilterRuleType.REJECT);
+        RuleBasedIpFilter ruleBasedIpFilter = new RuleBasedIpFilter(ipSubnetFilterRule);
+
+        //auth
+        AuthHandler authHandler = new AuthHandler();
 
         // channel顺序，入站：自上而下；出站：自下而上，对于服务端而言，先执行入站操作，而对于客户端而言，先执行出站操作。
         b.childHandler(new ChannelInitializer<NioSocketChannel>() {
@@ -60,11 +72,13 @@ public class Server {
 
                 pipeline.addLast("loggingHandler", new LoggingHandler(LogLevel.DEBUG));
 
+                pipeline.addLast("ipFilter", ruleBasedIpFilter);
+
+                pipeline.addLast("tsHandler", globalTrafficShapingHandler); // 流量整形
+
                 pipeline.addLast("metricHandler", metricsHandler); // 可共享的
 
                 pipeline.addLast("idleHandler", new ServerIdleCheckHandler()); // 空闲检测
-
-                pipeline.addLast("tsHandler", globalTrafficShapingHandler); // 流量整形
 
                 pipeline.addLast("frameDecoder", new OrderFrameDecode()); // 入站
                 pipeline.addLast("frameEncode", new OrderFrameEncode()); // 出站
@@ -73,6 +87,8 @@ public class Server {
 
                 // flush增强，增加了吞吐量，但有一定延迟
                 pipeline.addLast("flushEnhance", new FlushConsolidationHandler(10, true)); // 5次之后，才进行flush，打开异步增强
+
+                pipeline.addLast("auth", authHandler);
 
                 pipeline.addLast(businessGroup, new OrderServerProcessHandler()); // 入站
             }

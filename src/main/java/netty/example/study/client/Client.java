@@ -16,6 +16,7 @@ import netty.example.study.client.codec.OrderProtocolEncode;
 import netty.example.study.client.handler.ClientIdleCheckHandler;
 import netty.example.study.client.handler.KeepaliveHandler;
 import netty.example.study.common.RequestMessage;
+import netty.example.study.common.auth.AuthOperation;
 import netty.example.study.common.order.OrderOperation;
 import netty.example.study.util.IdUtil;
 
@@ -34,6 +35,7 @@ public class Client {
                 .group(new NioEventLoopGroup());
 
         KeepaliveHandler keepaliveHandler = new KeepaliveHandler();
+        LoggingHandler loggingHandler = new LoggingHandler(LogLevel.INFO);
 
         // 客户端，先执行出站（倒序）
         b.handler(new ChannelInitializer<NioSocketChannel>() {
@@ -48,7 +50,7 @@ public class Client {
                 pipeline.addLast(new OrderProtocolEncode()); // 出站
                 pipeline.addLast(new OrderProtocolDecode()); // 入站
 
-                pipeline.addLast(new LoggingHandler(LogLevel.INFO));
+                pipeline.addLast(loggingHandler);
 
                 pipeline.addLast(keepaliveHandler); // keepalive handler
             }
@@ -56,6 +58,12 @@ public class Client {
 
         // 绑定端口，启动
         ChannelFuture f = b.connect("127.0.0.1", 8090).sync();
+
+        // 【自定义授权】
+        String userName = "admin"; // 可以授权成功
+        String userName1 = "admin1"; // 不会授权成功
+        AuthOperation authOperation = new AuthOperation(userName1, "password");
+        f.channel().writeAndFlush(new RequestMessage(IdUtil.nextId(), authOperation));
 
         // 发送一个请求
         RequestMessage requestMessage = new RequestMessage(IdUtil.nextId(), new OrderOperation(1001, "tudou"));

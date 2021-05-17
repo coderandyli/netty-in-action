@@ -14,6 +14,7 @@ public class AuthOperation extends Operation {
 
     @Override
     public AuthOperationResult execute() {
+        // username等于admin，就认证通过
         if ("admin".equalsIgnoreCase(this.userName)) {
             AuthOperationResult orderResponse = new AuthOperationResult(true);
             return orderResponse;
